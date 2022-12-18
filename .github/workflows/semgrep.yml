@@ -1,0 +1,14 @@
+name: Running SemGrep for some static analysis
+run-name: Pull request ${{ github.event.number }} is being statically analyzed.
+on:
+  - push
+  - pull_request
+jobs:
+  run_semgrep:
+    name: Scan
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+    - uses: actions/checkout@v3
+    - run: semgrep ci

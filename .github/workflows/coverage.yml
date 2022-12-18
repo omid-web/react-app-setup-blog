@@ -1,5 +1,5 @@
 name: Coverage for the React application
-run-name: Pull request ${{github.event.number}} is being tested for coverage
+run-name: Pull request ${{ github.event.number }} is being tested for coverage
 on:
   - push
   - pull_request
