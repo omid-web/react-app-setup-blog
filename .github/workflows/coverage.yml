@@ -1,0 +1,13 @@
+name: Coverage for the React application
+run-name: Pull request ${{github.event.number}} is being tested for coverage
+on:
+  - push
+  - pull_request
+jobs:
+  run_coverage_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm install
+      - run: npm test -- --coverage --watchAll=false
