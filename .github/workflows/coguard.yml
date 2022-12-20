@@ -1,0 +1,59 @@
+name: CoGuard Scanning for infrastructure related files
+run-name: Pull request ${{github.event.number}} is being scanned for misconfigurations.
+on:
+  - push
+  - pull_request
+jobs:
+  run_coguard_check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: |
+          BEARER=$(curl -f -d 'client_id=client-react-frontend' \
+          -d "username=${{ secrets.COGUARD_USER_NAME }}" \
+          -d "password=${{ secrets.COGUARD_PASSWORD }}" \
+          -d 'grant_type=password' \
+          "https://portal.coguard.io/auth/realms/coguard/protocol/openid-connect/token" | jq -r '.access_token');
+          echo "BEARER=$BEARER" >> $GITHUB_ENV
+      - run: |
+          curl -X POST \
+          -H "Authorization: Bearer $BEARER" \
+          -d '{"clusterType": "", "location": "", "derivedFrom": ""}' \
+          "https://portal.coguard.io/server/cluster/add-cluster/react-test-app?organizationName=foobar"
+      - run: |
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $BEARER" \
+          -d '{"id": "react-app-container", "hostName": "", "externalIp": "", "internalIp": "172.16.238.2"}' \
+          "https://portal.coguard.io/server/cluster/add-new-machine/react-test-app?organizationName=foobar"
+      - run: |
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $BEARER" \
+          -d '{"serviceName": "dockerfile", "serviceKey": "dockerfile_react", "version": ""}' \
+          "https://portal.coguard.io/server/cluster/add-new-service/react-test-app/react-app-container?organizationName=foobar"
+      - run: |
+          curl -f \
+          -X POST \
+          --header "Content-Type: application/octet-stream" \
+          -H "Authorization: Bearer $BEARER" \
+          --data-binary @./Dockerfile \
+          "https://portal.coguard.io/server/cluster/upsert-config-file/react-test-app/react-app-container/dockerfile_react?organizationName=foobar&fileName=Dockerfile&defaultFileName=Dockerfile&subPath=."
+      - run: |
+          curl -f \
+          -X PUT \
+          -H "Authorization: Bearer $BEARER" \
+          "https://portal.coguard.io/server/cluster/run-report/react-test-app?organizationName=foobar"
+      - run: |
+          LATEST_REPORT_TIMESTAMP=$(curl -k -f -H \
+          "Authorization: Bearer $BEARER" \
+          "https://portal.coguard.io/server/cluster/reports/list?organizationName=foobar&clusterName=react-test-app" \
+          | jq -r 'last(.[])');
+          echo "LATEST_REPORT_TIMESTAMP=$LATEST_REPORT_TIMESTAMP" >> $GITHUB_ENV;
+      - run: |
+          curl -f \
+          -X GET \
+          -H "Authorization: Bearer $BEARER" \
+          "https://portal.coguard.io/server/cluster/report?organizationName=foobar&clusterName=react-test-app&reportName=$LATEST_REPORT_TIMESTAMP" | \
+          jq -r '.failed | length' | \
+          xargs -n 1 test 0 -eq
