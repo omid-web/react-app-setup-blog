@@ -57,3 +57,56 @@ jobs:
           "https://portal.coguard.io/server/cluster/report?organizationName=foobar&clusterName=react-test-app&reportName=$LATEST_REPORT_TIMESTAMP" | \
           jq -r '.failed | length' | \
           xargs -n 1 test 0 -eq
+      - run: |
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $BEARER" \
+          -d '{"serviceName": "dockerfile", "serviceKey": "dockerfile_nginx", "version": ""}' \
+          "https://portal.coguard.io/server/cluster/add-new-service/react-test-app/react-app-container?organizationName=foobar"
+      - run: |
+          curl -f \
+          -X POST \
+          --header "Content-Type: application/octet-stream" \
+          -H "Authorization: Bearer $BEARER" \
+          --data-binary @./docker_images/nginx/Dockerfile \
+          "https://portal.coguard.io/server/cluster/upsert-config-file/react-test-app/react-app-container/dockerfile_nginx?organizationName=foobar&fileName=Dockerfile&defaultFileName=Dockerfile&subPath=."
+      - run: |
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $BEARER" \
+          -d '{"serviceName": "dockerfile", "serviceKey": "dockerfile_redis", "version": ""}' \
+          "https://portal.coguard.io/server/cluster/add-new-service/react-test-app/react-app-container?organizationName=foobar"
+      - run: |
+          curl -f \
+          -X POST \
+          --header "Content-Type: application/octet-stream" \
+          -H "Authorization: Bearer $BEARER" \
+          --data-binary @./docker_images/redis/Dockerfile \
+          "https://portal.coguard.io/server/cluster/upsert-config-file/react-test-app/react-app-container/dockerfile_redis?organizationName=foobar&fileName=Dockerfile&defaultFileName=Dockerfile&subPath=."
+      - run: |
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $BEARER" \
+          -d '{"serviceName": "nginx", "serviceKey": "nginx_ingress_react", "version": ""}' \
+          "https://portal.coguard.io/server/cluster/add-new-service/react-test-app/react-app-container?organizationName=foobar"
+      - run: |
+          curl -f \
+          -X POST \
+          --header "Content-Type: application/octet-stream" \
+          -H "Authorization: Bearer $BEARER" \
+          --data-binary @./docker_images/nginx/conf/nginx.conf \
+          "https://portal.coguard.io/server/cluster/upsert-config-file/react-test-app/react-app-container/nginx_ingress_react?organizationName=foobar&fileName=nginx.conf&defaultFileName=nginx.conf&subPath=."
+      - run: |
+          curl -f \
+          -X POST \
+          --header "Content-Type: application/json" \
+          -H "Authorization: Bearer $BEARER" \
+          -d '{"fileName": "mime.types", "subPath": ".", "aliasList": ["/etc/nginx/mime.types;"]}' \
+          "https://portal.coguard.io/server/cluster/upsert-complimentary-file-entry/react-test-app/react-app-container/nginx_ingress_react?organizationName=foobar"
+      - run: |
+          curl -f \
+          -X POST \
+          --header "Content-Type: application/octet-stream" \
+          -H "Authorization: Bearer $BEARER" \
+          --data-binary @./docker_images/nginx/conf/mime.types \
+          "https://portal.coguard.io/server/cluster/upsert-complimentary-file/react-test-app/react-app-container/nginx_ingress_react?organizationName=foobar&fileName=mime.types&subPath=."
