@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  react-client:
+    build: .
+    restart: always
+    hostname: react-client.docker-example.net
+    logging:
+      options:
+        max-size: 100m
+        max-file: '3'
+    networks:
+      custom_react_network:
+        ipv4_address: 172.16.238.2
+        ipv6_address: 2001:3984:3989::2
+
+networks:
+  custom_react_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
+        - subnet: 2001:3984:3989::/64
